@@ -368,7 +368,31 @@ class Sudoku{
 
 	//final method which uses our helper methods to solve the sudoku
 	void solveSudoku(){
-		
+		//first we initialize the givens
+		//then we find the entry with least possibilities	
+		//we set the entry
+		//continue finding next entry
+		//if we find an entry, but zero possibilities, we need to backtrack
+		//if we have no more entries in search, then we have our solution
+		setInitialEntries();
+
+		//while loop for algorithm
+		while (true){
+			int entryFound = findEntryToFill();
+			
+			if (entryFound==-2){
+				//then we have found our solution
+				//so, we can break and print
+				break;
+			} else if (entryFound==-1){
+				//then we need to backtrack
+				backTrack();
+			} else {
+				//then we can safely set the value
+				setSudokuValue(entryFound);
+			}
+		}
+		printSudoku();
 	}
 
 	//method to print our sudoku in fancy fashion (blocks are indicated)
@@ -407,5 +431,12 @@ class Sudoku{
 int main(){
 	//user I/O to prompt the user to enter sudoku size and givens in the sudoku
 	//then the program will print the solution to the sudoku puzzle	
+	cout << "Please enter the size of the sudoku blocks below. (I.E 9x9 sudoku has block size of 3, (3^2 x 3^2)) . \n";
+	int size;
+	cin >> size;
+	//initializing my Sudoku game
+	Sudoku game = new Sudoku(size);
+
+	//now getting user to enter givens
 	return 0;
 }
