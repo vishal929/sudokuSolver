@@ -11,38 +11,39 @@ using std::vector;
 using std::stack;
 using std::unordered_set;
 
-
-
-
-
-class Sudoku{
-public:
-	class SudokuEntry{
+class SudokuEntry{
 		//field to determine if this is a given or not
 	public:
 		bool given;
 		//number which the entry is set to (if it is -1, then considered non-set)
+	public:
 		int value;
 		//numbers that are prohibited for this entry to take
 		//based on sudoku rules
+	public:
 		unordered_set <int> availableNums;
 
-		SudokuEntry(Sudoku* parent){
+		SudokuEntry(int sizeSquared){
 			given=false;
 			value=-1;
-			int size = parent->size;
 			//availableNums=new std::unordered_set <int>;	
-			for (int i=1;i<=size;i++){
+			for (int i=1;i<=sizeSquared;i++){
 				availableNums.insert(i);
 			}
 		}
 
 	};
-public:
+
+
+class Sudoku{
+
+	
 	//sudoku is split up into blocks of nxn
 	//the entire board is n^2 x n^2
+public:
 	int size;
 	//storing the square of the size (n^2), so we do not have to calculate it everytime
+public:
 	int sizeSquared;	
 	
 	//class which represents a sudoku entry (inner class)
@@ -53,31 +54,34 @@ public:
 	//basically we have an array with positions:
 	//row ---- column ---- value
 	//where row and column are from 0 to sizeSquared-1
-	vector <int> givens;
+public:
+	vector<int> givens;
 
 	//sudoku board has a stack of operations to help backtrack when we hit a dead end
 	//the stack stores the position of the last modified SudokuEntry
 	//WE NEED SOME WAY TO FIGURE OUT EXACTLY WHICH NUMS TO TRY
+public:
 	stack<int> ops;
 
 	//sudoku board has a matrix of SudokuEntries 
 	//size is n^2 x n^2
 	//dynamically created
 	//vector <SudokuEntry> entries;
-	vector<SudokuEntry> entries;
+public:
+	vector<SudokuEntry*> entries;
 
 
 	Sudoku(int mag){
 		//creating our sudoku object
 		//initializing the size and size squared
 		size=mag;
-		sizeSquared=pow(mag,2);
+		sizeSquared=mag*mag;
 
 		//initializing our SudokuEntries
 		int bigSize = sizeSquared*sizeSquared;
 		entries.reserve(bigSize);
 		for (int i=0;i<bigSize;i++){
-			entries.push_back(SudokuEntry(this));
+			entries.push_back(new SudokuEntry(sizeSquared));
 		}
 		//we have sizeSquared x sizeSquared entries
 		//entries = new SudokuEntry[sizeSquared*sizeSquared](this);	
@@ -92,10 +96,10 @@ public:
 	//col from 0 to sizeSquared-1
 	void setColumn(int forbidden,int col){
 		for (int i=0;i<sizeSquared;i++){
-			SudokuEntry toConsider =(entries)[col+(i*(sizeSquared))];
-			if (toConsider.given==false){
+			SudokuEntry *toConsider =(entries[col+(i*(sizeSquared))]);
+			if (toConsider->given==false){
 				//then we set the forbidden value
-				(toConsider.availableNums).erase(forbidden);
+				(toConsider->availableNums).erase(forbidden);
 			}
 		}		
 	}
@@ -103,10 +107,10 @@ public:
 	//method that sets a whole row an int as a forbidden value
 	void setRow(int forbidden,int row){
 		for (int i=0;i<sizeSquared;i++){
-			SudokuEntry toConsider =(entries)[i+(row*(sizeSquared))];
-			if (toConsider.given==false){
+			SudokuEntry *toConsider =((entries)[i+(row*(sizeSquared))]);
+			if (toConsider->given==false){
 				//then we set the forbidden value
-				(toConsider.availableNums).erase(forbidden);
+				(toConsider->availableNums).erase(forbidden);
 			}
 		}
 	}
@@ -125,9 +129,9 @@ public:
 			for (int j=fixedCol;j<fixedCol+size;j++){
 
 				//setting forbidden values for each entry
-				SudokuEntry toConsider = entries[i+(j*sizeSquared)];
-				if (toConsider.given==false){
-					toConsider.availableNums.erase(forbidden);
+				SudokuEntry *toConsider = (entries[j+(i*sizeSquared)]);
+				if (toConsider->given==false){
+					toConsider->availableNums.erase(forbidden);
 				}
 			}
 
@@ -147,9 +151,9 @@ public:
 			int val=givens[i+2];
 
 			//setting the entry
-			SudokuEntry toConsider = entries[col+(row*sizeSquared)];
-			toConsider.given=true;
-			toConsider.value=val;
+			SudokuEntry *toConsider = (entries[col+(row*sizeSquared)]);
+			toConsider->given=true;
+			toConsider->value=val;
 			
 			//setting forbidden entries in the same block, column, and row as this entry
 			setRow(val,row);
@@ -169,15 +173,15 @@ public:
 		int min =-1;
 		int len= sizeSquared*sizeSquared;
 		for (int i=0;i<len;i++){
-			SudokuEntry toConsider = entries[i];
-			if ((toConsider.given==false)){
-				if (toConsider.value==-1){
+			SudokuEntry *toConsider = (entries[i]);
+			if ((toConsider->given==false)){
+				if (toConsider->value==-1){
 					//then we found an unassigned value with possibilities
 					if (min==-1){
 						min=i;
 					} else{
 						//we should compare
-						if ((entries[min].availableNums).size()>(toConsider.availableNums).size()){
+						if (((entries[min])->availableNums).size()>(toConsider->availableNums).size()){
 							//then we can set this as the min
 							min=i;
 						}
@@ -190,7 +194,7 @@ public:
 			//then there is nothing left in the sudoku board to choose
 			//meaning we have a solution!
 			return -2;
-		} else if ((entries[min].availableNums).size()==0){
+		} else if ((((entries[min]))->availableNums).size()==0){
 			//then we hit a dead end
 			return -1;
 		}
@@ -202,32 +206,17 @@ public:
 		//basically if the value is -1, we pick the first value
 		//else we pick the next value
 		int toSet;
-		if ((entries[minPosition].value)==-1){
 			//then we iterate through the values and see if they are in the unordered_set
 			for (int i=1;i<=sizeSquared;i++){
-				unordered_set<int>::const_iterator found = (entries[minPosition].availableNums).find(i);
+				unordered_set<int>::const_iterator found = (((entries[minPosition]))->availableNums).find(i);
 
-				if (found!=(entries[minPosition].availableNums).end()){
+				if (found!=(((entries[minPosition]))->availableNums).end()){
 					//then this is in the availableNums
-					toSet = *found;
-					(entries[minPosition].value)=toSet;
+					toSet=i;
+					(((entries[minPosition]))->value)=i;
 					break;
 				}
 			}
-		} else {
-			//then a value is already set
-			int val = (entries[minPosition].value);
-			for (int i=val+1;i<=sizeSquared;i++){
-				unordered_set<int>::const_iterator found = (entries[minPosition].availableNums).find(i);
-
-				if (found!=(entries[minPosition].availableNums).end()){
-					//then this is in the availableNums
-					toSet = *found;
-					(entries[minPosition].value)=toSet;
-					break;
-				}
-			}
-		}
 		//setting forbidden entries in the same block, column, and row as this entry
 
 		//we should also push this operation to the stack/queue for backtracking
@@ -235,7 +224,7 @@ public:
 		ops.push(minPosition);
 		//minPostion = col + (sizeSquared*row)
 		int col = minPosition%sizeSquared;
-		int row = (minPosition-col)/sizeSquared;
+		int row = (minPosition)/sizeSquared;
 		setRow(toSet,row);
 		setColumn(toSet,col);
 		setBlock(toSet,row,col);
@@ -245,8 +234,8 @@ public:
 	//method to check if a value is in a row
 	bool checkRow(int val,int row){
 		for (int i=0;i<sizeSquared;i++){
-			SudokuEntry toConsider =(entries)[i+(row*(sizeSquared))];
-			if (toConsider.value==val){
+			SudokuEntry *toConsider =((entries)[i+(row*(sizeSquared))]);
+			if (toConsider->value==val){
 				//then we set the forbidden value
 				return true;
 			}
@@ -256,9 +245,9 @@ public:
 
 	//method to check if a value is in a column
 	bool checkCol(int val,int col){
-		for (int i=0;i<sizeSquared;i++){
-			SudokuEntry toConsider =(entries)[col+(i*(sizeSquared))];
-			if (toConsider.value==val){
+		for (int i=0;i<sizeSquared;i++){ 
+			SudokuEntry *toConsider =((entries)[col+(i*(sizeSquared))]);
+			if (toConsider->value==val){
 				//then we set the forbidden value
 				return true;
 			}
@@ -276,8 +265,8 @@ public:
 			for (int j=fixedCol;j<fixedCol+size;j++){
 
 				//setting forbidden values for each entry
-				SudokuEntry toConsider = entries[i+(j*sizeSquared)];
-				if (toConsider.value==val){
+				SudokuEntry *toConsider = (entries[j+(i*sizeSquared)]);
+				if (toConsider->value==val){
 					return true;
 				}
 			}
@@ -290,12 +279,12 @@ public:
 	void setSpecificRow(int value, int row){
 		for (int i=0;i<sizeSquared;i++){
 			int pos = (i+(row*(sizeSquared)));
-			SudokuEntry toConsider =(entries)[pos];
-			if (toConsider.given==false){
+			SudokuEntry *toConsider =((entries)[pos]);
+			if (toConsider->given==false){
 				//then we set the forbidden value
-				if (!(checkCol(value,i) && checkBlock(value,i,row))){
+				if ( !(checkCol(value,i)) && !(checkBlock(value,row,i))){
 					//then we can safely insert	
-					(toConsider.availableNums).insert(value);
+					(toConsider->availableNums).insert(value);
 				}
 			}
 		}
@@ -303,11 +292,11 @@ public:
 
 	void setSpecificCol(int value,int col ){
 		for (int i=0;i<sizeSquared;i++){
-			SudokuEntry toConsider =(entries)[col+(i*(sizeSquared))];
-			if (toConsider.given==false){
-				if (!(checkRow(value,i) && checkBlock(value,col,i))){
+			SudokuEntry *toConsider =((entries)[col+(i*(sizeSquared))]);
+			if (toConsider->given==false){
+				if ( !(checkRow(value,i)) && !(checkBlock(value,i,col))){
 					//then we insert value
-					(toConsider.availableNums).insert(value);
+					(toConsider->availableNums).insert(value);
 
 				}
 			}
@@ -326,11 +315,11 @@ public:
 			for (int j=fixedCol;j<fixedCol+size;j++){
 
 				//setting forbidden values for each entry
-				SudokuEntry toConsider = entries[i+(j*sizeSquared)];
-				if (toConsider.given==false){
-					if (!(checkRow(value,j) && checkCol(value,i))){
+				SudokuEntry *toConsider = (entries[j+(i*sizeSquared)]);
+				if (toConsider->given==false){
+					if ( !(checkRow(value,i)) && !(checkCol(value,j))){
 						//then we can safely add	
-						toConsider.availableNums.insert(value);
+						toConsider->availableNums.insert(value);
 					}
 				}
 			}
@@ -344,39 +333,41 @@ public:
 		//we first pop what was in the stack
 		while (!ops.empty()){
 
-		
+				
 			int lastOpPos = ops.top();
 			ops.pop() ;
+			cout << "Currently backtracking on position: "<<lastOpPos<<"\n";
 			//if there is another greater value for this we can choose, we choose it and push back to stack and continue
 			//pos = col +(sizeSquared*row)
 			int col=lastOpPos%sizeSquared;
-			int row = (lastOpPos-col)/sizeSquared;
-			SudokuEntry toConsider = entries[lastOpPos];
-			int val = toConsider.value;
+			int row = (lastOpPos)/sizeSquared;
+			SudokuEntry *toConsider = (entries[lastOpPos]);
+			int val = toConsider->value;
 			int toSet = 0;
-			for (int i=val+1;i<=sizeSquared;i++){ unordered_set<int>::const_iterator found = (toConsider.availableNums).find(val);
-				if (found!=(toConsider.availableNums).end()){
-					toSet=*found;
+			for (int i=val+1;i<=sizeSquared;i++){ 
+				unordered_set<int>::const_iterator found = (toConsider->availableNums).find(i);
+				if (found!=(toConsider->availableNums).end()){
+					toSet=i;
 					break;
 				}
 			}
 			//resetting the value
-			(toConsider.value)=-1;
+			(toConsider->value)=-1;
 			//need to reset value for other entries
 			setSpecificRow(val,row);
 			setSpecificCol(val,col);
-			setSpecificBlock(val,col,row);
+			setSpecificBlock(val,row,col);
 
 
-			if (toSet==0){
-				//move on in the stack
-			} else {
+			if (toSet!=0){	
 				//set new value and push
-				toConsider.value=toSet;
+				toConsider->value=toSet;
 				setRow(toSet,row);
 				setColumn(toSet,col);
-				setBlock(toSet,col,row);
+				setBlock(toSet,row,col);
 				ops.push(col+(sizeSquared*row));
+				cout << "WE SET THE NEW VALUE AND WE ARE CONTINUING...\n";
+				break;
 
 
 			}
@@ -399,24 +390,31 @@ public:
 		//if we find an entry, but zero possibilities, we need to backtrack
 		//if we have no more entries in search, then we have our solution
 		setInitialEntries();
+		printSudoku();
 
-		//while loop for algorithm
+		//while loop for algorithm 
 		while (true){
 			int entryFound = findEntryToFill();
 			
 			if (entryFound==-2){
 				//then we have found our solution
 				//so, we can break and print
+				printSudoku();
 				break;
 			} else if (entryFound==-1){
 				//then we need to backtrack
+				cout << "BACKTRACKING ... \n";
 				backTrack();
+				printSudoku();
 			} else {
 				//then we can safely set the value
+
+				cout << "ENTRY TO FILL:" << entryFound << "\n";
 				setSudokuValue(entryFound);
+				printSudoku();
 			}
-		}
-		printSudoku();
+		} 
+		cleanup();
 	}
 
 	//method to print our sudoku in fancy fashion (blocks are indicated)
@@ -440,13 +438,25 @@ public:
 		//or we could just print out each line as is :)
 		cout << " SUDOKU BOARD : \n";
 		for (int i=0;i<sizeSquared*sizeSquared;i++){
-			cout << entries[i].value;
+			if (entries[i]->value == -1){
+				//not printing dummy values
+				cout << " ";
+			} else {
+
+				cout << entries[i]->value;
+			}
 			if ((i+1)%(sizeSquared)==0){
 				//then this is the last num of a row
 				cout << "\n";
 			}
 		}
 		cout << "\n";
+	}
+
+	void cleanup(){
+		for (int i=0;i<entries.size();i++){
+			delete(entries[i]);
+		}
 	}
 
 	
@@ -462,5 +472,46 @@ int main(){
 	Sudoku game = Sudoku(size);
 
 	//now getting user to enter givens
+	cout << "Please enter your givens below by entering first the row, then the column, then the value. When you are done entering givens, please enter 0 for the row.\n ";
+	while (true){
+		//loop to enter givens
+		int row;
+		//cout << "Please enter the row for the given.\n";
+		cin >> row;
+		
+		//debug
+		if (row==0){
+			//then we should break;
+			break;
+		} 
+
+		
+		int col;
+		//cout << "Please enter the column for the given.\n";
+
+
+		cin >> col;
+
+
+		int val;
+		//cout << "Please enter the value for the given. \n";
+		cin >> val;
+		
+
+		//user enters actual row or column number, NOT THE INDEX	
+		game.givens.push_back(row-1);
+		game.givens.push_back(col-1);
+		game.givens.push_back(val);		
+
+
+
+	}
+	//cout << "first val:" << game.entries[0].value << "\n";
+	//game.setInitialEntries();
+	//game.printSudoku();
+	
+	cout << "Understood... Solving Sudoku and Printing the Board... \n";
+	game.solveSudoku();
+	//game.solveSudoku();
 	return 0;
 }
